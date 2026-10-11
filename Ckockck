@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Часы и Календарь</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #1a1a1a;
+    color: #fff;
+    overflow-y: auto;
+  }
+  .container { max-width: 420px; margin: 0 auto; padding: 0; }
+  .clock-box { padding: 15px 20px 12px 20px; }
+  .time {
+    font-size: 48px; font-weight: 300; color: #fff;
+    letter-spacing: 1px; font-variant-numeric: tabular-nums; line-height: 1;
+    text-shadow: 0 0 12px currentColor, 0 0 24px currentColor;
+  }
+  .date-today {
+    font-size: 13px; color: #9a9a9a; margin-top: 8px;
+    text-shadow: 0 0 8px currentColor;
+  }
+  .calendar {
+    background: #242424; border: 1px solid #333;
+    border-radius: 10px; margin: 0 10px; padding: 15px;
+    box-shadow: 0 0 20px rgba(255,255,255,0.05);
+  }
+  .cal-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 15px;
+  }
+  .cal-title {
+    font-size: 16px; color: #fff; font-weight: 400;
+    text-shadow: 0 0 8px currentColor;
+  }
+  .cal-nav { display: flex; gap: 5px; }
+  .cal-nav button {
+    background: transparent; border: none; color: #9a9a9a;
+    font-size: 18px; cursor: pointer; padding: 2px 10px;
+    border-radius: 6px; text-shadow: 0 0 6px currentColor;
+  }
+  .cal-nav button:active { background: #333; }
+  .cal-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 5px;
+  }
+  .cal-weekdays div {
+    text-align: center; font-size: 12px; color: #9a9a9a;
+    padding: 5px 0; text-shadow: 0 0 6px currentColor;
+  }
+  .cal-days {
+    display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 2px;
+  }
+  .cal-days div {
+    text-align: center; font-size: 14px; color: #fff;
+    padding: 9px 0; cursor: pointer; transition: 0.15s;
+    text-shadow: 0 0 6px currentColor;
+  }
+  .cal-days div:hover { background: #333; }
+  .cal-days div.other-month { color: #4a4a4a; text-shadow: none; }
+  .cal-days div.today {
+    background: #3a3a3a; color: #fff; font-weight: 500;
+    box-shadow: 0 0 12px rgba(255,255,255,0.4);
+  }
+  .cal-today-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 15px; padding-top: 12px; border-top: 1px solid #333;
+  }
+  .cal-today-header span {
+    font-size: 14px; color: #9a9a9a; text-shadow: 0 0 6px currentColor;
+  }
+  .cal-today-header button {
+    background: transparent; border: none; color: #9a9a9a;
+    font-size: 20px; cursor: pointer; padding: 0 10px;
+    text-shadow: 0 0 6px currentColor;
+  }
+  .cal-empty { display: flex; gap: 12px; padding: 15px 0 10px 0; align-items: flex-start; }
+  .cal-empty .icon {
+    width: 30px; height: 30px; border: 1px solid #9a9a9a;
+    border-radius: 6px; display: flex; align-items: center;
+    justify-content: center; color: #9a9a9a; font-size: 14px;
+    flex-shrink: 0; box-shadow: 0 0 8px rgba(255,255,255,0.2);
+  }
+  .cal-empty .text {
+    font-size: 12px; color: #9a9a9a; line-height: 1.5;
+    text-shadow: 0 0 6px currentColor;
+  }
+  .start-btn {
+    display: block; width: 100%; padding: 10px;
+    background: #3a3a3a; color: #fff; border: 1px solid #555;
+    border-radius: 6px; font-size: 14px; cursor: pointer; margin-top: 10px;
+    text-shadow: 0 0 8px currentColor;
+    box-shadow: 0 0 12px rgba(255,255,255,0.15);
+  }
+  .start-btn:active { background: #4a4a4a; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="clock-box">
+      <div class="time" id="time">0:00:00</div>
+      <div class="date-today" id="todayDate">—</div>
+    </div>
+    <div class="calendar">
+      <div class="cal-header">
+        <div class="cal-title" id="calTitle">—</div>
+        <div class="cal-nav">
+          <button onclick="prevMonth()">‹</button>
+          <button onclick="nextMonth()">›</button>
+        </div>
+      </div>
+      <div class="cal-weekdays">
+        <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+      </div>
+      <div class="cal-days" id="calDays"></div>
+      <div class="cal-today-header">
+        <span>Сегодня</span>
+        <button onclick="goToday()">+</button>
+      </div>
+      <div class="cal-empty">
+        <div class="icon">📅</div>
+        <div class="text">Настройте календари, чтобы видеть запланированные события</div>
+      </div>
+      <button class="start-btn">Начало работы</button>
+    </div>
+  </div>
+
+<script>
+let currentDate = new Date();
+
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours();
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  document.getElementById('time').textContent = `${h}:${m}:${s}`;
+  const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  document.getElementById('todayDate').textContent =
+    `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} г.`;
+}
+
+function renderCalendar() {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  document.getElementById('calTitle').textContent = `${monthNames[month]} ${year}`;
+
+  const firstDay = new Date(year, month, 1);
+  let startDay = firstDay.getDay();
+  if (startDay === 0) startDay = 7;
+  startDay -= 1;
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrev = new Date(year, month, 0).getDate();
+  const daysContainer = document.getElementById('calDays');
+  daysContainer.innerHTML = '';
+  const today = new Date();
+
+  for (let i = startDay - 1; i >= 0; i--) {
+    const d = document.createElement('div');
+    d.textContent = daysInPrev - i;
+    d.className = 'other-month';
+    daysContainer.appendChild(d);
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    const d = document.createElement('div');
+    d.textContent = i;
+    if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+      d.className = 'today';
+    }
+    daysContainer.appendChild(d);
+  }
+  const totalCells = startDay + daysInMonth;
+  const remaining = (7 - (totalCells % 7)) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    const d = document.createElement('div');
+    d.textContent = i;
+    d.className = 'other-month';
+    daysContainer.appendChild(d);
+  }
+}
+
+function prevMonth() { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); }
+function nextMonth() { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); }
+function goToday() { currentDate = new Date(); renderCalendar(); }
+
+updateClock();
+setInterval(updateClock, 1000);
+renderCalendar();
+</script>
+</body>
+</html>
